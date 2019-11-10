@@ -4,6 +4,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# project specific directories
+model_checkpoints
+evals
+*.pkl
 # C extensions
 *.so
 

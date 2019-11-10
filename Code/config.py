@@ -6,9 +6,9 @@ gpu_number =7
 model_mode = "prob"
 ############################################################
 testing = "Test1"
-corpus_dir = "DATA/bio_probs/spark/"
-output_dir_path = "models_checkpoints/"+ testing+"/"
-dump_address = "Evals/"+testing+"/"
+corpus_dir = '../Data/formatted/'
+output_dir_path = "../models_checkpoints/"+ testing+"/"
+dump_address = "../evals/"+testing+"/"
 
 
 training = True
@@ -23,8 +23,8 @@ if_visualize = True
 
 ##############################################################
 if model_mode== "prob":
-    corpus_pkl = "DATA/bio_probs_pkl/corpus.io.pkl"
-    encoder_pkl = "DATA/bio_probs_pkl/encoder.io.pkl"
+    corpus_pkl = corpus_dir + "/pkl/corpus.io.pkl"
+    encoder_pkl = corpus_dir + "/pkl/encoder.io.pkl"
 ##############################################################
 lr = 0.0001
 extractor_type = 'lstm'
@@ -44,7 +44,7 @@ weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_51
 ########################################################################################
 if not torch.cuda.is_available():
     print("[LOG] running on CPU")
-    emb_path ='EMBEDDINGS/glove.6B/glove.6B.100d.txt'
+    emb_path = '../../embedding/glove.6B.100d.txt'
 else:
     print("[LOG] running on GPU")
-    emb_path = '../../../../embedding/glove.6B.100d.txt'
+    emb_path = '../../embedding/glove.6B.100d.txt'
