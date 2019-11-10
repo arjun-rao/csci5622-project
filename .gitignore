@@ -5,8 +5,11 @@ __pycache__/
 *$py.class
 
 # project specific directories
-model_checkpoints
-evals
+Code/visualization/res/
+models_checkpoints/
+evals/
+output_*.txt
+
 *.pkl
 # C extensions
 *.so
