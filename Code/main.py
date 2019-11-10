@@ -12,7 +12,7 @@ from torch.optim import SGD
 from utils.data  import Corpus, Encoder
 from model.seqmodel import SeqModel
 from model.seqmodel_Elmo import SeqModel_Elmo
-from model.lstm_crf import Lstm_crf
+#from model.lstm_crf import Lstm_crf
 import torch.optim as optim
 import config
 
