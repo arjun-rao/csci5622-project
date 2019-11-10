@@ -23,8 +23,8 @@ if_visualize = True
 
 ##############################################################
 if model_mode== "prob":
-    corpus_pkl = corpus_dir + "/pkl/corpus.io.pkl"
-    encoder_pkl = corpus_dir + "/pkl/encoder.io.pkl"
+    corpus_pkl = corpus_dir + "corpus.io.pkl"
+    encoder_pkl = corpus_dir + "encoder.io.pkl"
 ##############################################################
 lr = 0.0001
 extractor_type = 'lstm'
