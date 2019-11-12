@@ -114,3 +114,4 @@ venv.bak/
 .DS_store
 .requirements.txt.swp
 *.pkl
+.vscode/settings.json
