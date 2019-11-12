@@ -2,3 +2,4 @@ torch
 torchvision
 allennlp
 sklearn-crfsuite
+tensorflow==1.15.0

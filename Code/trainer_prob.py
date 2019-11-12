@@ -217,7 +217,7 @@ class Trainer(object):
                     train_total_y_pred.extend(all_pred)
                     train_total_y_true.extend(all_label)
 
-                   
+
 
 
             train_f1_total = metrics.flat_f1_score(train_total_y_true, train_total_y_pred, average= "micro")
@@ -231,7 +231,7 @@ class Trainer(object):
             print("[LOG] ______compute dev: ")
             model.eval()
             self.batch_size = self.batch_size_org
-           
+
             dev_right_preds = 0
             dev_total_preds = 0
             total_dev_loss = 0
@@ -240,7 +240,7 @@ class Trainer(object):
             for batch_i in range(total_batch_dev):
                 if (batch_i == total_batch_dev - 1) and (len(self.corpus.dev.labels) % self.batch_size > 0):
                     self.batch_size = len(self.corpus.dev.labels) % self.batch_size
-                    
+
                 dev_score, dev_target,dev_scores_flat, dev_target_flat, dev_seq_len, dev_mask, dev_words,__, _= self.batchify(batch_i, self.corpus.dev, model)
                 dev_loss = theLoss(dev_scores_flat, F.softmax(dev_target_flat, 1)) #/ self.batch_size
                 total_dev_loss += dev_loss.item() * self.batch_size
@@ -387,7 +387,7 @@ class Trainer(object):
 
 
 
-            
+
 
 
 
