@@ -5,7 +5,6 @@ __pycache__/
 *$py.class
 
 # project specific directories
-Code/visualization/res/
 models_checkpoints/
 evals/
 output_*.txt
@@ -113,5 +112,5 @@ venv.bak/
 
 
 .DS_store
-Code/.requirements.txt.swp
+.requirements.txt.swp
 *.pkl
