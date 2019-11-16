@@ -2,16 +2,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from allennlp.modules.elmo import Elmo, batch_to_ids
+from transformers import BertModel
+from transformers import BertTokenizer
+
 import numpy as np
 import config
 
-class SeqModel_Elmo(nn.Module):
+class SeqModel_Bert(nn.Module):
     def __init__(self, num_labels, extractor_type,  hidden_dim):
-        super(SeqModel_Elmo, self).__init__()
+        super(SeqModel_Bert, self).__init__()
 
-        self.elmoLayer = ElmoLayer(config.options_file, config.weight_file)
-        self.featureEncoder = FeatureEncoder(input_dim=2048, extractor_type= extractor_type, hidden_dim =hidden_dim)
+        self.bertLayer = VanillaBertLayer()
+        # Bert embedding dimension is 768
+        self.featureEncoder = FeatureEncoder(input_dim=768, extractor_type= extractor_type, hidden_dim = hidden_dim)
         if config.if_att:
             self.attention = Attention(hidden_dim)
         self.score_layer = nn.Sequential(
@@ -28,7 +31,7 @@ class SeqModel_Elmo(nn.Module):
 
 
     def forward(self, words):
-        emb_sequence, mask = self.elmoLayer(words)
+        emb_sequence, mask = self.bertLayer(words)
         features = self.featureEncoder(emb_sequence, mask)  # emb_sequence shape: [batch_size, max_seq_len, emb_dim] => [128, 50, 100]
         if config.if_att:
             features, att_weights = self.attention(features, mask.float())
@@ -40,23 +43,37 @@ class SeqModel_Elmo(nn.Module):
 
 
 
-class ElmoLayer(nn.Module):
-    def __init__(self,options_file, weight_file):
-        super(ElmoLayer, self).__init__()
-        self.elmo = Elmo(options_file, weight_file, 2, dropout=0.3)
-
+class VanillaBertLayer(nn.Module):
+    def __init__(self):
+        super(VanillaBertLayer, self).__init__()
+        self.bert = BertModel.from_pretrained(config.bert_directory)
+        self.tokenizer = BertTokenizer.from_pretrained(config.bert_directory)
 
 
     def forward(self, words):
-        character_ids = batch_to_ids(words)
-        elmo_output = self.elmo(character_ids)
-        elmo_representation = torch.cat(elmo_output['elmo_representations'], -1)
-        mask = elmo_output['mask']
+        # Encode tokens using BertTokenizer
+        T = 50
+        padded_encodings = []
+        attn_masks = []
+        segment_ids = []
+        for tokens in words:
+            padded_tokens = tokens + ['[PAD]' for _ in range(T - len(tokens))]
+            attn_mask = [1 if token != '[PAD]' else 0 for token in padded_tokens]
+            seg_ids = [0 for _ in range(len(padded_tokens))]
+            token_ids = self.tokenizer.encode(padded_tokens)
+            padded_encodings.append(token_ids)
+            attn_masks.append(attn_mask)
+            segment_ids.append(seg_ids)
+        token_ids = torch.tensor(padded_encodings)
+        attn_mask = torch.tensor(attn_masks)
+        seg_ids = torch.tensor(segment_ids)
+        hidden_reps, cls_head = self.bert(token_ids, attention_mask = attn_mask, token_type_ids = seg_ids)
+
 
         if torch.cuda.is_available():
-            elmo_representation = elmo_representation.cuda()
-            mask = mask.cuda()
-        return elmo_representation, mask
+            hidden_reps = hidden_reps.cuda()
+            attn_mask = attn_mask.cuda()
+        return hidden_reps, attn_mask
 
 
 class FeatureEncoder(nn.Module):
@@ -84,17 +101,17 @@ class FeatureEncoder(nn.Module):
        :return:
         """
         if self.extractor_type == 'lstm':
-            lengths = torch.sum(mask, 1) # sum up all 1 values which is equal to the lenghts of sequences
-            lengths, order = lengths.sort(0, descending=True)
-            recover = order.sort(0, descending=False)[1]
+            # lengths = torch.sum(mask, 1) # sum up all 1 values which is equal to the lenghts of sequences
+            # lengths, order = lengths.sort(0, descending=True)
+            # recover = order.sort(0, descending=False)[1]
 
-            sequences = sequences[order]
-            packed_words = pack_padded_sequence(sequences, lengths.cpu().numpy(), batch_first=True)
-            lstm_out, hidden = self.lstm(packed_words, None)
-
-            feats, _ = pad_packed_sequence(lstm_out)
-            feats = feats.permute(1, 0, 2)
-            feats = feats[recover] # feat shape: [batch_size, seq_len, hidden_dim] => [128, 44, 32]
+            # sequences = sequences[order]
+            # packed_words = pack_padded_sequence(sequences, lengths.cpu().numpy(), batch_first=True)
+            lstm_out, hidden = self.lstm(sequences, None)
+            feats = lstm_out
+            # feats, _ = pad_packed_sequence(lstm_out)
+            # feats = feats.permute(1, 0, 2)
+            # feats = feats[recover] # feat shape: [batch_size, seq_len, hidden_dim] => [128, 44, 32]
         return feats
 
 

@@ -18,6 +18,8 @@ from visualization import attention_visualization
 from sklearn_crfsuite import metrics
 import pickle
 import os
+from tqdm import tqdm
+
 helper = Helper()
 logger = Logger(config.output_dir_path + 'logs')
 
@@ -81,7 +83,7 @@ def get_batch_all_label_pred(numpy_predictions, numpy_label, mask_numpy, scores_
     return  (all_label, all_pred) if not isinstance(scores_numpy, np.ndarray) else (all_label, all_pred, all_score)
 
 def to_tensor_labels(encodings,  return_mask=False):
-    maxlen = max(map(len, encodings))
+    maxlen = 50 if config.if_Bert else max(map(len, encodings))
     tensor =[]
     for i, sample in enumerate(encodings):
         seq_len = len(sample)
@@ -97,7 +99,7 @@ def to_tensor_labels(encodings,  return_mask=False):
     return  tensor_tens
 
 def to_tensor(encodings, pad_value=0, return_mask=False):
-    maxlen = max(map(len, encodings))
+    maxlen = 50 if config.if_Bert else max(map(len, encodings))
     tensor = torch.zeros(len(encodings), maxlen).long() + pad_value
     mask = torch.zeros(len(encodings), maxlen).long()
     for i, sample in enumerate(encodings):
@@ -133,7 +135,7 @@ class Trainer(object):
         l_tensor = to_tensor_labels(dataset.labels[batch_start: batch_end])
         words = dataset.words[batch_start: batch_end]
 
-        if config.if_Elmo:
+        if config.if_Elmo or config.if_Bert:
             scores, mask, att_w = model.forward(words)
             actual_words_no_pad = words
         else:
@@ -172,8 +174,8 @@ class Trainer(object):
             total_batch_dev += 1
 
 
-        for epoch in range(self.epochs):
-
+        for epoch in tqdm(range(self.epochs)):
+            print(f"[LOG] Epoch: {epoch+1}/{self.epochs}")
             self.batch_size = self.batch_size_org
             train_total_preds = 0
             train_right_preds = 0
@@ -182,7 +184,7 @@ class Trainer(object):
             train_total_y_true = []
             train_total_y_pred =[]
             with open("output_train.txt", "w") as f:
-                for batch_i in range(total_batch_train):
+                for batch_i in tqdm(range(total_batch_train)):
 
                     if (batch_i == total_batch_train - 1) and (len(self.corpus.train.labels) % self.batch_size > 0):
                         self.batch_size = len(self.corpus.train.labels) % self.batch_size

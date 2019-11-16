@@ -15,6 +15,8 @@ training = True
 
 if_Elmo = False
 
+if_Bert = True
+
 if_att = False
 
 if_ROC = True
@@ -32,6 +34,8 @@ feat_extractor = 'lstm'
 
 if if_Elmo:
     hidden_dim = 2048
+elif if_Bert:
+    hidden_dim = 768
 else:
     hidden_dim = 512
 
@@ -39,8 +43,8 @@ epochs = 1
 batch_size = 16
 
 ######################################Elmo files##################################################
-options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
-weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+options_file = "../../embedding/elmo/elmo_2x4096_512_2048cnn_2xhighway_options.json"
+weight_file = "../../embedding/elmo/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 ########################################################################################
 if not torch.cuda.is_available():
     print("[LOG] running on CPU")
@@ -48,3 +52,6 @@ if not torch.cuda.is_available():
 else:
     print("[LOG] running on GPU")
     emb_path = '../../embedding/glove.6B.100d.txt'
+
+
+bert_directory = '../../embedding/bert/'
