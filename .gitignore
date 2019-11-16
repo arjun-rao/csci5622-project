@@ -115,3 +115,4 @@ venv.bak/
 .requirements.txt.swp
 *.pkl
 .vscode/settings.json
+.vs

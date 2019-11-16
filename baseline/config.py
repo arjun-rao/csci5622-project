@@ -1,6 +1,6 @@
 import torch
 
-gpu_number =7
+gpu_number = 0
 
 ##########################################################
 model_mode = "prob"
