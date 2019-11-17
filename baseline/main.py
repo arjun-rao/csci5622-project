@@ -64,9 +64,6 @@ if __name__ == '__main__':
         print("[LOG] Test:")
         trainer.predict(model, theLoss, trainer.corpus.test)
 
-``
-
-
 
 
 

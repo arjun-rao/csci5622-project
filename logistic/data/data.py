@@ -9,6 +9,11 @@ import numpy as np
 import torch.optim as optim
 from torch.autograd import Variable
 import torch.nn.functional as F
+from scipy.stats import entropy
+from sklearn_crfsuite import metrics
+import itertools
+import scipy
+from sklearn.metrics import mean_squared_error
 
 
 def read_text_embeddings(filename):
@@ -189,3 +194,102 @@ class Dataset(object):
         with open(filename, 'r') as fp:
             lines = [line.strip() for line in fp]
         return lines
+
+def js(p, q):
+    p /= p.sum()
+    q /= q.sum()
+    m = (p + q) / 2
+    return (entropy(p, m) + entropy(q, m)) / 2
+def Average(lst):
+    return sum(lst) / len(lst)
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3
+
+def match_M(all_scores_no_padd, all_labels_no_pad):
+
+    top_m = [1, 2, 3, 4]
+
+    for m in top_m:
+        intersects_lst = []
+        # exact_lst = []
+        score_lst = []
+        ############################################### computing scores:
+        for s in all_scores_no_padd:
+            if len(s) <=m:
+                continue
+            h = m
+            # if len(s) > h:
+            #     while (s[np.argsort(s)[-h]] == s[np.argsort(s)[-(h + 1)]] and h < (len(s) - 1)):
+            #         h += 1
+
+            s = np.array(s)
+
+            ind_score = np.argsort(s)[-h:]
+            score_lst.append(ind_score)
+
+        ############################################### computing labels:
+        label_lst = []
+        for l in all_labels_no_pad:
+            if len(l) <=m:
+                continue
+            # if it contains several top values with the same amount
+            h = m
+            if len(l) > h:
+                while (l[np.argsort(l)[-h]] == l[np.argsort(l)[-(h + 1)]] and h < (len(l) - 1)):
+                    h += 1
+            l = np.array(l)
+            ind_label = np.argsort(l)[-h:]
+            label_lst.append(ind_label)
+
+        ############################################### :
+
+        for i in range(len(score_lst)):
+            intersect = intersection(score_lst[i], label_lst[i])
+            intersects_lst.append((len(intersect))/(min(m, len(score_lst[i]))))
+            # sorted_score_lst = sorted(score_lst[i])
+            # sorted_label_lst =  sorted(label_lst[i])
+            # if sorted_score_lst==sorted_label_lst:
+            #     exact_lst.append(1)
+            # else:
+            #     exact_lst.append(0)
+
+        print("m----> ", m)
+        print("approx_m: ", Average(intersects_lst))
+
+
+def topK(all_scores_no_padd, all_labels_no_pad):
+    topk = [1,2,3,4]
+
+    for k in topk:
+        score_lst =[]
+        for s in all_scores_no_padd:
+            # if it contains several top values with the same amount
+            h = k
+            if len(s) > h:
+                while (s[np.argsort(s)[-h]] == s[np.argsort(s)[-(h + 1)]] and h<(len(s)-1)):
+                    h += 1
+            s = np.array(s)
+            ind_score = np.argsort(s)[-h:]
+            score_val = np.zeros(len(s))
+            score_val[ind_score] = 1
+            score_lst.append(score_val.tolist())
+
+        ############################################### computing labels:
+
+        label_lst_topk = []
+        for l in all_labels_no_pad:
+            h = k
+            if len(l) > h:
+                while (l[np.argsort(l)[-h]] == l[np.argsort(l)[-(h + 1)]] and h<(len(l)-1) ):
+                    h += 1
+            l = np.array(l)
+            ind_label = np.argsort(l)[-h:]
+            label_val = np.zeros(len(l))
+            label_val[ind_label] = 1
+            label_lst_topk.append(label_val.tolist())
+
+        ############################################### computing topk_label - topk_score:
+
+        print("K----> ",k)
+        print("binary f-score: ", metrics.flat_f1_score(label_lst_topk, score_lst, average="binary"))
