@@ -10,12 +10,12 @@ from sklearn.metrics import precision_recall_fscore_support
 
 class Logistic:
     def __init__(self):        
-        emb_path = '../../../embedding/glove.6B.100d.txt'
-        corpus_dir = '../../Data/formatted/'
-        corpus_pkl =  "./corpus.io.pkl"
-        encoder_pkl = "./encoder.io.pkl"
-        corpus = Corpus.get_corpus(corpus_dir, corpus_pkl)
-        encoder = Encoder.get_encoder(corpus, emb_path, encoder_pkl)
+        self.emb_path = '../../../embedding/glove.6B.100d.txt'
+        self.corpus_dir = '../../Data/formatted/'
+        self.corpus_pkl =  "./corpus.io.pkl"
+        self.encoder_pkl = "./encoder.io.pkl"
+        self.corpus = Corpus.get_corpus(self.corpus_dir, self.corpus_pkl)
+        self.encoder = Encoder.get_encoder(self.corpus, self.emb_path, self.encoder_pkl)
         
     def word_pos(self,tag, pos_tags):
         pos_emb = []
