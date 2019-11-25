@@ -8,6 +8,12 @@ from data import Encoder,Corpus
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 
+class Pos:
+    def __init__(self):
+        self.word = 0
+        self.label = 3
+        self.pos = 4
+        
 class Logistic:
     def __init__(self):        
         self.emb_path = '../../../embedding/glove.6B.100d.txt'
@@ -30,7 +36,8 @@ class Logistic:
         emb = self.encoder.word_emb[self.encoder.word2index[word]]
         return emb
 
-    def generate_features(self,filename, pos_tags = None):
+    def generate_features(self,filename, pos_tags = None,prev_count=0,next_count=0):
+        pos_obj = Pos()
         ip_file = filename
         X_train, y_train = [], []
         keylist = []
@@ -51,15 +58,15 @@ class Logistic:
         #generate feature dict
         #outer-counter handles lines, inner-counter handles each word in line
         outer_counter = 0
-        for l in lines:
-            if not l:
+        for sentence in lines:
+            if not sentence:
                 inner_counter = 1
                 outer_counter+=1
             else:
                 word_id = str(outer_counter)+"_"+str(inner_counter)
-                word = l[0]
-                pos = l[4]
-                y = l[3]
+                word = sentence[pos_obj.word]
+                pos = sentence[pos_obj.pos]
+                y = sentence[pos_obj.label]
                 keylist.append(word_id)
                 word_dict[word_id].append(word)
                 word_dict[word_id].append(pos)
@@ -124,7 +131,7 @@ def main():
     y_pred = []
     y_test_prob = []
     x_test, y_test, word_dict = xy_test
-    for i in x_test:
+    for i in range(len(x_test)):
         labels = clf.predict_proba(x_test[i])
         y_pred.append([item[1] for item in labels])
         y_test_prob.append(y_test[i])
