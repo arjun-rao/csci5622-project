@@ -131,10 +131,12 @@ def main():
     y_pred = []
     y_test_prob = []
     x_test, y_test, word_dict = xy_test
-    for i in range(len(x_test)):
-        labels = clf.predict_proba(x_test[i])
-        y_pred.append([item[1] for item in labels])
-        y_test_prob.append(y_test[i])
+    labels = clf.predict_proba(x_test)
+    #print(t.shape)
+    #for i in range(len(x_test)):
+    #    labels = clf.predict_proba(x_test[i])
+        #y_pred.append([item[1] for item in labels])
+        #y_test_prob.append(y_test[i])
     embed()
 
 if __name__ == "__main__":
