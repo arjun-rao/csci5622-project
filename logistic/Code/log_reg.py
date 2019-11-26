@@ -36,12 +36,12 @@ class Logistic:
         emb = self.encoder.word_emb[self.encoder.word2index[word]]
         return emb
 
-    def generate_features(self,filename, pos_tags = None,prev_count=0,next_count=0):
+    def generate_features(self,filename, pos_tags = None,prev_count=1,next_count=1):
         pos_obj = Pos()
         ip_file = filename
         X_split, y_split = [], []
         keylist = []
-        word_dict = defaultdict(list)
+        word_dict = defaultdict(list)   #key:sentence_word_id; value:["word",pos_tag,predicted_label]
 
         with open(ip_file, 'r') as fp:
             lines = [line.split() for line in fp]
@@ -59,7 +59,7 @@ class Logistic:
         #outer-counter handles lines, inner-counter handles each word in line
         outer_counter = 0
         for sentence in lines:
-            if not sentence:
+            if not sentence: #handles blank lines; separator between different sentences
                 inner_counter = 1
                 outer_counter+=1
             else:
@@ -73,14 +73,14 @@ class Logistic:
                 word_dict[word_id].append(y)
                 inner_counter+=1
         key_indices = list(enumerate(word_dict))
-        current_key = key_indices[0][1]
+        # current_key = key_indices[0][1]
         sentence_features = defaultdict(list)
         sentence_probs = defaultdict(list)
         for index,key in tqdm(key_indices):
             outer, inner = key.split("_")
             #prev pos embedding
             if inner=="1":  #handles first word with no-prev embedding
-                prev_pos_emb = [0] * len(pos_tags)
+                prev_pos_emb = [0] * len(pos_tags) * prev_count
 
             else:
                 prev_pos = word_dict[keylist[index-1]][1]
@@ -95,12 +95,12 @@ class Logistic:
             next_outer = str(int(outer)+1)+"_1"
             try:
                 if next_outer == keylist[index+1]:
-                    next_pos_emb = [0] * len(pos_tags)
+                    next_pos_emb = [0] * len(pos_tags) * next_count
                 else:
                     next_pos = word_dict[keylist[index+1]][1]
                     next_pos_emb = self.word_pos(next_pos, pos_tags)
             except:
-                next_pos_emb = [0] * len(pos_tags)
+                next_pos_emb = [0] * len(pos_tags) * next_count
 
             # get word-embedding for particular word
             word_vector = list(self.word_emb(word_dict[key][0]))
@@ -119,9 +119,10 @@ class Logistic:
             y_split.append(true_y)
         return X_split, y_split, [sentence_features, sentence_probs, word_dict], pos_tags
     
-    # def predict_score(self):
-
-
+    def predict_score(self,predicted_scores,true_label):
+        match_m_score = match_M(predicted_scores,true_label)
+        top_k_score = topK(predicted_scores,true_label)
+        return match_m_score, top_k_score
 
 
 def main():
@@ -141,8 +142,9 @@ def main():
         y_pred.append([item[1] for item in labels])
         y_test_prob.append(y_test[i])
     
-    match_m_sore = match_M(y_pred,y_test_prob)
-    top_k_score = topK(y_pred,y_test_prob)
+    match_score,k_score = lr_obj.predict_score(y_pred,y_test_prob)
+    print("Match Score: ",match_score)
+    print("K score: ",k_score)
     # embed()
 
 if __name__ == "__main__":
