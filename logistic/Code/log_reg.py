@@ -39,7 +39,7 @@ class Logistic:
     def generate_features(self,filename, pos_tags = None,prev_count=0,next_count=0):
         pos_obj = Pos()
         ip_file = filename
-        X_train, y_train = [], []
+        X_split, y_split = [], []
         keylist = []
         word_dict = defaultdict(list)
 
@@ -108,7 +108,7 @@ class Logistic:
             #X_train
             feature_vector = word_vector+prev_pos_emb+cur_pos_emb+next_pos_emb
             
-            X_train.append(feature_vector)
+            X_split.append(feature_vector)
             sentence_features[outer].append(feature_vector)
             
             #y-values
@@ -116,8 +116,11 @@ class Logistic:
             sentence_probs[outer].append(float(word_dict[key][2]))
 
             #y-train
-            y_train.append(true_y)
-        return X_train, y_train, [sentence_features, sentence_probs, word_dict], pos_tags
+            y_split.append(true_y)
+        return X_split, y_split, [sentence_features, sentence_probs, word_dict], pos_tags
+    
+    # def predict_score(self):
+
 
 
 
@@ -130,13 +133,14 @@ def main():
     clf.fit(x_train, y_train)
     y_pred = []
     y_test_prob = []
+    #stores sentence features, sentence_probs, word_dict respectively
     x_test, y_test, word_dict = xy_test
     labels = clf.predict_proba(x_test)
-    #print(t.shape)
-    #for i in range(len(x_test)):
-    #    labels = clf.predict_proba(x_test[i])
-        #y_pred.append([item[1] for item in labels])
-        #y_test_prob.append(y_test[i])
+    
+    for i in x_test:
+        labels = clf.predict_proba(x_test[i])
+        y_pred.append([item[1] for item in labels])
+        y_test_prob.append(y_test[i])
     embed()
 
 if __name__ == "__main__":
