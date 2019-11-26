@@ -4,7 +4,7 @@ from IPython import embed
 from tqdm import tqdm
 # import spacy
 # nlp = spacy.load('en_core_web_md')
-from data import Encoder,Corpus
+from data import *
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 
@@ -135,13 +135,15 @@ def main():
     y_test_prob = []
     #stores sentence features, sentence_probs, word_dict respectively
     x_test, y_test, word_dict = xy_test
-    labels = clf.predict_proba(x_test)
     
     for i in x_test:
         labels = clf.predict_proba(x_test[i])
         y_pred.append([item[1] for item in labels])
         y_test_prob.append(y_test[i])
-    embed()
+    
+    match_m_sore = match_M(y_pred,y_test_prob)
+    top_k_score = topK(y_pred,y_test_prob)
+    # embed()
 
 if __name__ == "__main__":
     main()
