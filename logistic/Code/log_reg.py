@@ -79,32 +79,42 @@ class Logistic:
         for index,key in tqdm(key_indices):
             outer, inner = key.split("_")
             #prev pos embedding
+            # prev_pos_emb = [0] * len(pos_tags) * prev_count
             if inner=="1":  #handles first word with no-prev embedding
                 prev_pos_emb = [0] * len(pos_tags) * prev_count
 
             else:
-                prev_pos = word_dict[keylist[index-1]][1]
-                prev_pos_emb = self.word_pos(prev_pos, pos_tags)
+                prev_pos_emb = []
+                for i in range(prev_count+1):
+                    if i!=0 and index-i >=0:
+                        prev_pos = word_dict[keylist[index-i]][1]
+                        prev_pos_emb.extend(self.word_pos(prev_pos, pos_tags))
+                    elif index-i<0:
+                        prev_pos_emb.extend([0]*len(pos_tags))
 
 
             #current pos embedding
             cur_pos = word_dict[key][1]
             cur_pos_emb = self.word_pos(cur_pos, pos_tags)
 
+
             #next pos embedding
             next_outer = str(int(outer)+1)+"_1"
             try:
-                if next_outer == keylist[index+1]:
-                    next_pos_emb = [0] * len(pos_tags) * next_count
-                else:
-                    next_pos = word_dict[keylist[index+1]][1]
-                    next_pos_emb = self.word_pos(next_pos, pos_tags)
+                next_pos_emb=[]
+                for i in range(next_count+1):
+                    if next_outer == keylist[index+i] or next_outer.split("_")[0] == keylist[index+i].split("_")[0]:
+                        next_pos_emb = [0] * len(pos_tags) * next_count
+                    elif i!=0:
+                        # next_pos_emb = []
+                        next_pos = word_dict[keylist[index+i]][1]
+                        next_pos_emb.extend(self.word_pos(next_pos, pos_tags))
             except:
                 next_pos_emb = [0] * len(pos_tags) * next_count
 
             # get word-embedding for particular word
             word_vector = list(self.word_emb(word_dict[key][0]))
-
+            f_prev,f_cur,f_next = len(prev_pos_emb), len(cur_pos_emb),len(next_pos_emb)
             #X_train
             feature_vector = word_vector+prev_pos_emb+cur_pos_emb+next_pos_emb
             
@@ -127,6 +137,7 @@ class Logistic:
 
 def main():
     lr_obj = Logistic()
+
     x_train, y_train, xy_train, pos_tags = lr_obj.generate_features('./bio_probs_train.txt')
 
     x_test, y_test, xy_test, _ = lr_obj.generate_features('./bio_probs_test.txt', pos_tags)
@@ -143,8 +154,6 @@ def main():
         y_test_prob.append(y_test[i])
     
     match_score,k_score = lr_obj.predict_score(y_pred,y_test_prob)
-    print("Match Score: ",match_score)
-    print("K score: ",k_score)
     # embed()
 
 if __name__ == "__main__":
