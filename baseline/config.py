@@ -39,8 +39,8 @@ elif if_Bert:
 else:
     hidden_dim = 512
 
-epochs = 1
-batch_size = 16
+epochs = 5
+batch_size = 32
 
 ######################################Elmo files##################################################
 options_file = "../../embedding/elmo/elmo_2x4096_512_2048cnn_2xhighway_options.json"

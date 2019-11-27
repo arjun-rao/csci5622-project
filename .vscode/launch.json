@@ -5,11 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: bert",
             "type": "python",
             "request": "launch",
-            "program": "/Users/arjun/files/CU-local/ML-Project/Code/csci5622-project/baseline/main.py",
-            "cwd": "/Users/arjun/files/CU-local/ML-Project/Code/csci5622-project/baseline",
+            "program": "/Users/arjun/files/CU-local/ML-Project/Code/csci5622-project/bert/main.py",
+            "args": ["--do_train", "--do_test"],
+            "cwd": "/Users/arjun/files/CU-local/ML-Project/Code/csci5622-project/bert/",
             "console": "integratedTerminal"
         }
     ]

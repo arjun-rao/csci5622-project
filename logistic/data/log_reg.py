@@ -9,14 +9,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 
 class Logistic:
-    def __init__(self):        
+    def __init__(self):
         emb_path = '../../../embedding/glove.6B.100d.txt'
         corpus_dir = '../../Data/formatted/'
         corpus_pkl =  "./corpus.io.pkl"
         encoder_pkl = "./encoder.io.pkl"
         corpus = Corpus.get_corpus(corpus_dir, corpus_pkl)
         encoder = Encoder.get_encoder(corpus, emb_path, encoder_pkl)
-        
+
     def word_pos(self,tag, pos_tags):
         pos_emb = []
         for pos in pos_tags:
@@ -100,10 +100,10 @@ class Logistic:
 
             #X_train
             feature_vector = word_vector+prev_pos_emb+cur_pos_emb+next_pos_emb
-            
+
             X_train.append(feature_vector)
             sentence_features[outer].append(feature_vector)
-            
+
             #y-values
             true_y = 1 if float(word_dict[key][2]) >= 0.5 else 0
             sentence_probs[outer].append(float(word_dict[key][2]))
@@ -123,6 +123,7 @@ if __name__ == "__main__":
     y_pred = []
     y_test_prob = []
     x_test, y_test, word_dict = xy_test
+    embed()
     for i in x_test:
         labels = clf.predict_proba(x_test[i])
         y_pred.append([item[1] for item in labels])

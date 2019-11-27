@@ -8,9 +8,9 @@ from transformers import BertTokenizer
 import numpy as np
 import config
 
-class SeqModel_Bert(nn.Module):
+class BertAttnModel(nn.Module):
     def __init__(self, num_labels, extractor_type,  hidden_dim):
-        super(SeqModel_Bert, self).__init__()
+        super(BertAttnModel, self).__init__()
 
         self.bertLayer = VanillaBertLayer(num_labels)
         # Bert embedding dimension is 768
@@ -30,8 +30,8 @@ class SeqModel_Bert(nn.Module):
             self.score_layer = self.score_layer.cuda()
 
 
-    def forward(self, tokens):
-        emb_sequence, mask = self.bertLayer(tokens)
+    def forward(self, tokens, attn_mask, seg_ids):
+        emb_sequence, mask = self.bertLayer(tokens, attn_mask, seg_ids)
         features = self.featureEncoder(emb_sequence, mask)  # emb_sequence shape: [batch_size, max_seq_len, emb_dim] => [128, 50, 100]
         if config.if_att:
             features, att_weights = self.attention(features, mask.float())
@@ -50,30 +50,15 @@ class VanillaBertLayer(nn.Module):
         self.tokenizer = BertTokenizer.from_pretrained(config.bert_directory)
 
 
-    def forward(self, words):
+    def forward(self, tokens, attn_mask, seg_ids):
         # Encode tokens using BertTokenizer
-        T = 50
-        padded_encodings = []
-        attn_masks = []
-        segment_ids = []
-        for tokens in words:
-            padded_tokens = tokens + ['[PAD]' for _ in range(T - len(tokens))]
-            attn_mask = [1 if token != '[PAD]' else 0 for token in padded_tokens]
-            seg_ids = [0 for _ in range(len(padded_tokens))]
-            token_ids = self.tokenizer.encode(padded_tokens)
-            padded_encodings.append(token_ids)
-            attn_masks.append(attn_mask)
-            segment_ids.append(seg_ids)
-        token_ids = torch.tensor(padded_encodings)
-        attn_mask = torch.tensor(attn_masks)
-        seg_ids = torch.tensor(segment_ids)
-        hidden_reps, cls_head, hidden_layers,  = self.bert(token_ids, attention_mask = attn_mask, token_type_ids = seg_ids)
-
+        hidden_reps, cls_head, hidden_layers, attn_layers = self.bert(tokens, attention_mask = attn_mask, token_type_ids = seg_ids)
+        features = np.sum(hidden_layers[-4:-1])
 
         if torch.cuda.is_available():
-            hidden_reps = hidden_reps.cuda()
+            features = features.cuda()
             attn_mask = attn_mask.cuda()
-        return hidden_reps, attn_mask
+        return features, attn_mask
 
 
 class FeatureEncoder(nn.Module):
