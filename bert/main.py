@@ -37,7 +37,7 @@ from dataset import *
 from model import BertAttnModel
 
 helper = Helper()
-logger = Logger(output_dir_path + 'logs')
+logger = Logger(config.output_dir_path + 'logs')
 
 def tensor_logging(model, info, epoch):
     for tag, value in info.items():
@@ -288,10 +288,10 @@ if __name__ == '__main__':
     lr = args.learning_rate
     epochs = args.epochs
     bs = args.batch_size
-    corpus = Corpus.get_corpus(corpus_dir, corpus_pkl)
+    corpus = Corpus.get_corpus(config.corpus_dir, config.corpus_pkl)
 
     # Load bert tokenizer
-    tokenizer = BertTokenizer.from_pretrained(bert_directory)
+    tokenizer = BertTokenizer.from_pretrained(config.bert_directory)
 
 
     tr_inputs, tr_topic_ids, tr_masks, tr_labels  = generate_bert_tensor_data(corpus.train, tokenizer, MAX_LEN)
@@ -309,8 +309,8 @@ if __name__ == '__main__':
     dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=bs)
 
     test_data = TensorDataset(test_inputs, test_topic_ids, test_masks, test_labels)
-    test_sampler = RandomSampler(test_data)
-    test_dataloader = DataLoader(test_data, sampler=test_sampler, batch_size=bs)
+    # test_sampler = RandomSampler(test_data)
+    test_dataloader = DataLoader(test_data, batch_size=bs)
 
     # model = BertForTokenClassification.from_pretrained(bert_directory, num_labels=NUM_LABELS)
 
