@@ -3,8 +3,6 @@ import argparse
 import torch
 import json
 import re
-from model.seqmodel import SeqModel
-from config import *
 import torch
 import torch.nn as nn
 import numpy as np
@@ -12,9 +10,12 @@ from torch.optim import SGD
 from utils.data  import Corpus, Encoder
 from model.seqmodel import SeqModel
 from model.seqmodel_Elmo import SeqModel_Elmo
+from model.seqmodel_Bert import SeqModel_Bert
 #from model.lstm_crf import Lstm_crf
 import torch.optim as optim
 import config
+from config import *
+from IPython import embed
 
 if __name__ == '__main__':
     if torch.cuda.is_available():
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     corpus = Corpus.get_corpus(corpus_dir, corpus_pkl)
     encoder = Encoder.get_encoder(corpus, emb_path, encoder_pkl)
 
-    if not config.if_Elmo:
+    if not (config.if_Elmo or config.if_Bert):
         encoder.encode_words(corpus)
 
 
@@ -47,6 +48,9 @@ if __name__ == '__main__':
         if config.if_Elmo:
             print("[LOG] Using Elmo ...")
             model = SeqModel_Elmo(len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
+        elif config.if_Bert:
+            print("[LOG] Using Bert ...")
+            model = SeqModel_Bert(len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
         else:
             model = SeqModel(encoder.word_emb, len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
         optimizer = optim.Adam(lr=lr, params=model.parameters())
@@ -63,7 +67,7 @@ if __name__ == '__main__':
         print("==========================================================")
         print("[LOG] Test:")
         trainer.predict(model, theLoss, trainer.corpus.test)
-
+        embed()
 
 
 
