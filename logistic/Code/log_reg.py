@@ -3,10 +3,15 @@ from collections import OrderedDict
 from IPython import embed
 from tqdm import tqdm
 # import spacy
+import torch
+import numpy as np
 # nlp = spacy.load('en_core_web_md')
 from data import *
+from itertools import chain
+from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
+import fasttext
 
 class Pos:
     def __init__(self):
@@ -14,7 +19,7 @@ class Pos:
         self.label = 3
         self.pos = 4
         
-class Logistic:
+class Dataset:
     def __init__(self):        
         self.emb_path = '../../../embedding/glove.6B.100d.txt'
         self.corpus_dir = '../../Data/formatted/'
@@ -22,7 +27,8 @@ class Logistic:
         self.encoder_pkl = "./encoder.io.pkl"
         self.corpus = Corpus.get_corpus(self.corpus_dir, self.corpus_pkl)
         self.encoder = Encoder.get_encoder(self.corpus, self.emb_path, self.encoder_pkl)
-        
+        self.model = fasttext.load_model("result/fil9.bin")
+
     def word_pos(self,tag, pos_tags):
         pos_emb = []
         for pos in pos_tags:
@@ -32,11 +38,14 @@ class Logistic:
                 pos_emb.append(0)
         return pos_emb
 
-    def word_emb(self,word):
-        emb = self.encoder.word_emb[self.encoder.word2index[word]]
+    def word_emb(self,word,glove_emb=True):
+        if glove_emb:
+            emb = self.encoder.word_emb[self.encoder.word2index[word]]
+        else:
+            emb = self.model.get_word_vector(word)
         return emb
 
-    def generate_features(self,filename, pos_tags = None,prev_count=1,next_count=1):
+    def generate_features(self,filename, pos_tags = None,prev_count=1,next_count=1,glove_emb=True):
         pos_obj = Pos()
         ip_file = filename
         X_split, y_split = [], []
@@ -113,7 +122,7 @@ class Logistic:
                 next_pos_emb = [0] * len(pos_tags) * next_count
 
             # get word-embedding for particular word
-            word_vector = list(self.word_emb(word_dict[key][0]))
+            word_vector = list(self.word_emb(word_dict[key][0],glove_emb))
             f_prev,f_cur,f_next = len(prev_pos_emb), len(cur_pos_emb),len(next_pos_emb)
             #X_train
             feature_vector = word_vector+prev_pos_emb+cur_pos_emb+next_pos_emb
@@ -136,15 +145,18 @@ class Logistic:
 
 
 def main():
-    lr_obj = Logistic()
+    lr_obj = Dataset()
 
-    x_train, y_train, xy_train, pos_tags = lr_obj.generate_features('./bio_probs_train.txt')
+    x_train, y_train, xy_train, pos_tags = lr_obj.generate_features(filename='./bio_probs_train.txt',glove_emb=False)
 
-    x_test, y_test, xy_test, _ = lr_obj.generate_features('./bio_probs_test.txt', pos_tags)
+    x_test, y_test, xy_test, _ = lr_obj.generate_features(filename='./bio_probs_test.txt', pos_tags=pos_tags, glove_emb=False)
     clf = LogisticRegression(random_state=2019)
     clf.fit(x_train, y_train)
     y_pred = []
     y_test_prob = []
+    y_test_roc = []
+    y_pred_roc = []
+    #x-test format: key:"1" value:[probs for each word]; key represents the sentence_#
     #stores sentence features, sentence_probs, word_dict respectively
     x_test, y_test, word_dict = xy_test
     
@@ -152,9 +164,22 @@ def main():
         labels = clf.predict_proba(x_test[i])
         y_pred.append([item[1] for item in labels])
         y_test_prob.append(y_test[i])
-    
+        y_pred_roc.extend(labels)
+    y_pred_roc = torch.tensor(y_pred_roc)
+    _, pred = torch.max(y_pred_roc, 1)
+    for i in y_test_prob:
+        y_test_roc.extend(i)
+    y_test_roc = np.array([1 if i >= 0.5 else 0 for i in y_test_roc])
+    pred = pred.numpy()
+    # print("pred:",len(pred))
+    # print("y_test_roc",len(y_test_roc))
+    print('ROC: ',roc_auc_score(y_test_roc, pred))
     match_score,k_score = lr_obj.predict_score(y_pred,y_test_prob)
+    # print(y_pred," ... ",y_test_prob)
+
+    # print("ROC SCORE: ",roc_score)
     # embed()
+
 
 if __name__ == "__main__":
     main()
