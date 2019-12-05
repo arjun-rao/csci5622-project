@@ -145,11 +145,11 @@ class Dataset:
 
 
 def main():
-    lr_obj = Dataset()
+    data_obj = Dataset()
 
-    x_train, y_train, xy_train, pos_tags = lr_obj.generate_features(filename='./bio_probs_train.txt',glove_emb=False)
+    x_train, y_train, xy_train, pos_tags = data_obj.generate_features(filename='./bio_probs_train.txt',glove_emb=False)
 
-    x_test, y_test, xy_test, _ = lr_obj.generate_features(filename='./bio_probs_test.txt', pos_tags=pos_tags, glove_emb=False)
+    x_test, y_test, xy_test, _ = data_obj.generate_features(filename='./bio_probs_test.txt', pos_tags=pos_tags, glove_emb=False)
     clf = LogisticRegression(random_state=2019)
     clf.fit(x_train, y_train)
     y_pred = []
@@ -174,7 +174,7 @@ def main():
     # print("pred:",len(pred))
     # print("y_test_roc",len(y_test_roc))
     print('ROC: ',roc_auc_score(y_test_roc, pred))
-    match_score,k_score = lr_obj.predict_score(y_pred,y_test_prob)
+    match_score,k_score = data_obj.predict_score(y_pred,y_test_prob)
     # print(y_pred," ... ",y_test_prob)
 
     # print("ROC SCORE: ",roc_score)
