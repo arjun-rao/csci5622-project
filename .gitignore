@@ -114,7 +114,8 @@ venv.bak/
 .DS_store
 .requirements.txt.swp
 *.pkl
-.vscode/settings.json
+.vscode/
 .vs
 logistic/Code/result/fil9.bin
 logistic/Code/get-pip.py
+bert/visualization/res/*
