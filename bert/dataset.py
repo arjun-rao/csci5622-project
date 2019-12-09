@@ -35,8 +35,15 @@ class Dataset(object):
         self.bert_tokens, self.bert_labels, self.bert_token_maps = self._bert_tokenize(tokenizer)
 
     def _bert_tokenize_sentence(self, tokenizer, sentence):
-        """Returns bert tokens and labels split using bert tokenizer, with map between original and new labels
-        for one sentence
+        """Returns bert tokens and labels split using bert tokenizer,
+           with map between original and new labels
+           for one sentence
+           Example: "Welcome to housewarming party"
+            ['CLS', 'Welcome', 'to', 'house#####', '#####warming', 'party', [SEP]]
+            [[1, 0], [0.88, 0.22], ... ]
+            [0, 0, 1, 1]
+            [1, 2, 4,  5]
+
 
         Arguments:
             tokenizer, BertTokenizer: the initialized BertTokenizer object.
