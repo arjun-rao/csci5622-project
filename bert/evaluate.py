@@ -4,6 +4,7 @@ from sklearn_crfsuite import metrics
 import itertools
 import pickle
 import scipy
+import argparse
 from sklearn.metrics import mean_squared_error
 
 def js(p, q):
@@ -134,7 +135,11 @@ def Jensen_Shannon(scores_probs, label_probs):
 
 
 if __name__ == '__main__':
-    file = "../Evals/BertTest1/"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dir", default="BertTest1", type=str,
+                        help="Evaluation Directory")
+    args = parser.parse_args()
+    file = "../Evals/" + args.dir + "/"
 
     scores_numpy = pickle.load(open(file + "score_pobs.pkl", "rb"))
     label_probs = pickle.load(open(file + "label_pobs.pkl", "rb"))
