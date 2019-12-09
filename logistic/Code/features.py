@@ -16,16 +16,17 @@ class Pos:
         self.word = 0
         self.label = 3
         self.pos = 4
-        
+
 class Features:
-    def __init__(self):        
+    def __init__(self):
         self.emb_path = '../../../embedding/glove.6B.100d.txt'
         self.corpus_dir = '../../Data/formatted/'
         self.corpus_pkl =  "./corpus.io.pkl"
         self.encoder_pkl = "./encoder.io.pkl"
         self.corpus = Corpus.get_corpus(self.corpus_dir, self.corpus_pkl)
         self.encoder = Encoder.get_encoder(self.corpus, self.emb_path, self.encoder_pkl)
-        self.model = fasttext.load_model("result/fil9.bin")
+        # self.model = fasttext.load_model("result/fil9.bin")
+        self.model = None
 
     def word_pos(self,tag, pos_tags):
         pos_emb = []
@@ -124,10 +125,10 @@ class Features:
             f_prev,f_cur,f_next = len(prev_pos_emb), len(cur_pos_emb),len(next_pos_emb)
             #X_train
             feature_vector = word_vector+prev_pos_emb+cur_pos_emb+next_pos_emb
-            
+
             X_split.append(feature_vector)
             sentence_features[outer].append(feature_vector)
-            
+
             #y-values
             true_y = 1 if float(word_dict[key][2]) >= 0.5 else 0
             sentence_probs[outer].append(float(word_dict[key][2]))
@@ -135,7 +136,7 @@ class Features:
             #y-train
             y_split.append(true_y)
         return X_split, y_split, [sentence_features, sentence_probs, word_dict], pos_tags
-    
+
     def predict_score(self,predicted_scores,true_label):
         match_m_score = match_M(predicted_scores,true_label)
         top_k_score = topK(predicted_scores,true_label)
