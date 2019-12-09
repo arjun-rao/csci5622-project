@@ -19,11 +19,12 @@ from keras import optimizers
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import matplotlib.pylab as plt
 
+from visualization import attention_visualization
 
 
 def main():
     mlp_obj = Logistic()
-
+    corpus = Corpus.get_corpus("../../Data/formatted/", "./corpus.io.pkl")
     x_train, y_train, xy_train, pos_tags = mlp_obj.generate_features('./bio_probs_train.txt')
 
     x_test, y_test, xy_test, _ = mlp_obj.generate_features('./bio_probs_test.txt', pos_tags)
@@ -86,6 +87,12 @@ def main():
         y_pred.append(l_new)
         y_pred_roc.extend(labels)
         y_test_prob.append(y_test[i])
+    embed()
+    text_flat = []
+    for test in corpus.test.words:
+        text_flat.append(" ".join(test))
+
+    attention_visualization.createHTML(text_flat, y_pred, "res/mlp.html")
     y_pred_roc = torch.tensor(y_pred_roc)
     _, pred = torch.max(y_pred_roc, 1)
     y_test_roc = []
