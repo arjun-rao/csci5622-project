@@ -6,14 +6,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 import attention_visualization
 from features import *
+from IPython import embed
 from sklearn.svm import SVC
 
 
 
 def gen_feature():
     features_obj = Features()
-    x_train, y_train, xy_train, pos_tags = features_obj.generate_features(filename='./bio_probs_train.txt',glove_emb=False)
-    x_test, y_test, xy_test, _ = features_obj.generate_features(filename='./bio_probs_test.txt', pos_tags=pos_tags, glove_emb=False)
+    x_train, y_train, xy_train, pos_tags = features_obj.generate_features(filename='./bio_probs_train.txt',glove_emb=True)
+    x_test, y_test, xy_test, _ = features_obj.generate_features(filename='./bio_probs_test.txt', pos_tags=pos_tags, glove_emb=True)
     return x_train, y_train, xy_train, pos_tags, x_test, y_test, xy_test,_
 
 
@@ -57,7 +58,8 @@ def svm_lin(corpus, do_train=False):
     x_train, y_train, xy_train, pos_tags,x_test, y_test, xy_test,_ = gen_feature()
     print("Finished")
     if do_train:
-        clf = SVC(random_state=2019, probability=True)
+        # Penalize for imbalance
+        clf = SVC(random_state=2019,gamma='auto', class_weight='balanced', probability=True)
         print("Finished1")
         clf.fit(x_train, y_train)
         pickle.dump(clf, open('trained_svm.pkl', "wb"))
@@ -99,6 +101,7 @@ def main():
     corpus = Corpus.get_corpus("../../Data/formatted/", "./corpus.io.pkl")
     # log_reg(corpus)
     svm_lin(corpus, True)
+    embed()
 
 
 
