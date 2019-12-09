@@ -35,6 +35,7 @@ from config import *
 import config
 from dataset import *
 from model import BertAttnModel
+import attention_visualization
 
 helper = Helper()
 logger = Logger(config.output_dir_path + 'logs')
@@ -59,7 +60,35 @@ bs = 32
 # Number of labels
 NUM_LABELS = 2
 
-# Prepare training data
+# Store viz results
+fileVizMap = {
+    'scores': {'text': [], 'wts': []},
+    'target': {'text': [], 'wts': []},
+    'target_softmax': {'text': [], 'wts': []}
+}
+
+def visualize_attention(wts,words, filename, maps, viz_type='scores'):
+    """
+    Visualization function to create heat maps for prediction, ground truth and attention (if any) probabilities
+    :param wts:
+    :param words:
+    :param filename:
+    :return:
+    """
+    wts_add = wts.cpu()
+    wts_add_np = wts_add.data.numpy()
+    wts_add_list = wts_add_np.tolist()
+    new_wts = []
+    for s_id in range(len(maps)):
+        new_wts.append([wts_add_list[s_id][i] for i in maps[s_id]])
+    text= []
+    for index, test in enumerate(words):
+        text.append(" ".join(test))
+    fileVizMap[viz_type]['text'].extend(text)
+    fileVizMap[viz_type]['wts'].extend(new_wts)
+    attention_visualization.createHTML(text, new_wts, filename)
+    return
+
 
 def to_tensor_labels(labels,  MAX_LEN):
     maxlen = MAX_LEN
@@ -181,6 +210,7 @@ def train(model, tr_dataloader, dev_dataloader,corpus, epochs=1, learning_rate=0
 
             # track train loss
             total_train_loss += train_loss.item() * batch_size
+            # get the index of the label with higher probability - used for AUC-ROC score.
             _, predictions_max = torch.max(torch.exp(scores_flat), 1)
             predictions_max = predictions_max.view(batch_size, seq_len)
             numpy_predictions_max = predictions_max.cpu().detach().numpy()
@@ -275,11 +305,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--do_train", action="store_true",
                         help="Whether to run training.")
+    parser.add_argument("--do_viz", action="store_true",
+                        help="Whether to run visualization for test set.")
+    parser.add_argument("--dump_viz", action="store_true",
+                        help="Whether store the results of visualizations.")
     parser.add_argument("--batch_size", default=32, type=int,
                         help="Override batch_size")
     parser.add_argument("--learning_rate", default=0.0001, type=float,
                         help="Override learning ratene")
-    parser.add_argument("--epochs", default=5, type=int,
+    parser.add_argument("--epochs", default=3, type=int,
                         help="Override number of epochs")
     parser.add_argument("--do_test", action="store_true",
                         help="Whether to run training.")
@@ -297,9 +331,7 @@ if __name__ == '__main__':
     tr_inputs, tr_topic_ids, tr_masks, tr_labels  = generate_bert_tensor_data(corpus.train, tokenizer, MAX_LEN)
 
     dev_inputs, dev_topic_ids, dev_masks, dev_labels  = generate_bert_tensor_data(corpus.dev, tokenizer, MAX_LEN)
-
     test_inputs, test_topic_ids, test_masks, test_labels  = generate_bert_tensor_data(corpus.test, tokenizer, MAX_LEN)
-
     tr_data = TensorDataset(tr_inputs, tr_topic_ids, tr_masks, tr_labels)
     tr_sampler = RandomSampler(tr_data)
     tr_dataloader = DataLoader(tr_data, sampler=tr_sampler, batch_size=bs)
@@ -314,7 +346,7 @@ if __name__ == '__main__':
 
     # model = BertForTokenClassification.from_pretrained(bert_directory, num_labels=NUM_LABELS)
 
-    model = BertAttnModel(len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
+    model = BertAttnModel(len(corpus.get_label_vocab()), config.extractor_type,  config.hidden_dim)
 
     if args.do_train:
         print('Running training....')
@@ -340,9 +372,15 @@ if __name__ == '__main__':
     total_labels_numpy_probs =[]
     total_mask_numpy =[]
     total_test_loss = 0
+    batch_i = -1
     for batch in tqdm(test_dataloader, desc="batch"):
+        batch_i += 1
         b_inputs, b_topic_ids, b_masks, b_labels = batch
         batch_size, seq_len = b_labels.size(0), b_labels.size(1)
+        batch_start = batch_i * batch_size
+        batch_end = batch_start + batch_size
+        b_words = corpus.test.words[batch_start: batch_end]
+        b_id_maps = corpus.test.bert_token_maps[batch_start: batch_end]
         # forward pass
         scores = model(b_inputs, b_masks, b_topic_ids)[0]
         # score_flat
@@ -362,6 +400,13 @@ if __name__ == '__main__':
         predictions_max = predictions_max.view(batch_size, seq_len)
         numpy_predictions_max = predictions_max.cpu().detach().numpy()
 
+        # Visualization:
+        if args.do_viz:
+            sfe = scores_flat_exp[:, 1].view(batch_size, seq_len)
+
+            visualize_attention(sfe, b_words, filename='res/' + config.testing + '_scores'+str(batch_i)+'.html', maps=b_id_maps, viz_type='scores')
+            visualize_attention(b_labels[:,:,1], b_words, filename='res/target' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target')
+            visualize_attention(F.softmax(b_labels, 1)[:,:,1], b_words, filename='res/target_softmaxed' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target_softmax')
         # computing scores for ROC curve:
         scores_numpy = scores_flat_exp[:, 1].view(batch_size, seq_len)
         scores_numpy = scores_numpy.cpu().detach().numpy()
@@ -411,3 +456,33 @@ if __name__ == '__main__':
     pickle.dump(np.array(total_labels_numpy_probs),
                 open(os.path.join(config.dump_address, "label_pobs.pkl"), "wb"))
     pickle.dump(np.array(total_mask_numpy), open(os.path.join(config.dump_address, "mask_pobs.pkl"), "wb"))
+
+    if args.do_viz and args.dump_viz:
+        pickle.dump(fileVizMap, open(os.path.join(config.dump_address, "vizmap.pkl"), "wb"))
+        attention_visualization.createHTML(fileVizMap['scores']['text'], fileVizMap['scores']['wts'], 'res/' + config.testing + '_scores_all.html')
+        attention_visualization.createHTML(fileVizMap['target']['text'], fileVizMap['target']['wts'], 'res/TargetAll.html')
+        attention_visualization.createHTML(fileVizMap['target_softmax']['text'], fileVizMap['target_softmax']['wts'], 'res/TargetSoftmaxAll.html')
+
+        import csv
+
+        with open('./visualization/res/targetAll.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in fileVizMap['target']['wts']:
+                writer.writerow(row)
+
+        with open('./visualization/res/' + config.testing + '_All.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in fileVizMap['scores']['wts']:
+                writer.writerow(row)
+
+        with open('./visualization/res/targetSoftAll.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in fileVizMap['target_softmax']['wts']:
+                writer.writerow(row)
+
+        with open('./visualization/res/words.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=' ')
+            for row in fileVizMap['target']['text']:
+                writer.writerow(row.split(' '))
+
+    embed()
