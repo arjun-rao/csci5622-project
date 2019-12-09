@@ -60,9 +60,14 @@ bs = 32
 # Number of labels
 NUM_LABELS = 2
 
-# Prepare training data
+# Store viz results
+fileVizMap = {
+    'scores': {'text': [], 'wts': []},
+    'target': {'text': [], 'wts': []},
+    'target_softmax': {'text': [], 'wts': []}
+}
 
-def visualize_attention(wts,words,filename, maps):
+def visualize_attention(wts,words, filename, maps, viz_type='scores'):
     """
     Visualization function to create heat maps for prediction, ground truth and attention (if any) probabilities
     :param wts:
@@ -79,7 +84,8 @@ def visualize_attention(wts,words,filename, maps):
     text= []
     for index, test in enumerate(words):
         text.append(" ".join(test))
-    embed()
+    fileVizMap[viz_type]['text'].extend(text)
+    fileVizMap[viz_type]['wts'].extend(new_wts)
     attention_visualization.createHTML(text, new_wts, filename)
     return
 
@@ -301,6 +307,8 @@ if __name__ == '__main__':
                         help="Whether to run training.")
     parser.add_argument("--do_viz", action="store_true",
                         help="Whether to run visualization for test set.")
+    parser.add_argument("--dump_viz", action="store_true",
+                        help="Whether store the results of visualizations.")
     parser.add_argument("--batch_size", default=32, type=int,
                         help="Override batch_size")
     parser.add_argument("--learning_rate", default=0.0001, type=float,
@@ -396,9 +404,9 @@ if __name__ == '__main__':
         if args.do_viz:
             sfe = scores_flat_exp[:, 1].view(batch_size, seq_len)
 
-            visualize_attention(sfe, b_words, filename='res/scores'+str(batch_i)+'.html', maps=b_id_maps)
-            visualize_attention(b_labels[:,:,1], b_words, filename='res/target' + str(batch_i) + '.html', maps=b_id_maps)
-            visualize_attention(F.softmax(b_labels, 1)[:,:,1], b_words, filename='res/target_softmaxed' + str(batch_i) + '.html', maps=b_id_maps)
+            visualize_attention(sfe, b_words, filename='res/' + config.testing + '_scores'+str(batch_i)+'.html', maps=b_id_maps, viz_type='scores')
+            visualize_attention(b_labels[:,:,1], b_words, filename='res/target' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target')
+            visualize_attention(F.softmax(b_labels, 1)[:,:,1], b_words, filename='res/target_softmaxed' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target_softmax')
         # computing scores for ROC curve:
         scores_numpy = scores_flat_exp[:, 1].view(batch_size, seq_len)
         scores_numpy = scores_numpy.cpu().detach().numpy()
@@ -448,3 +456,33 @@ if __name__ == '__main__':
     pickle.dump(np.array(total_labels_numpy_probs),
                 open(os.path.join(config.dump_address, "label_pobs.pkl"), "wb"))
     pickle.dump(np.array(total_mask_numpy), open(os.path.join(config.dump_address, "mask_pobs.pkl"), "wb"))
+
+    if args.do_viz and args.dump_viz:
+        pickle.dump(fileVizMap, open(os.path.join(config.dump_address, "vizmap.pkl"), "wb"))
+        attention_visualization.createHTML(fileVizMap['scores']['text'], fileVizMap['scores']['wts'], 'res/' + config.testing + '_scores_all.html')
+        attention_visualization.createHTML(fileVizMap['target']['text'], fileVizMap['target']['wts'], 'res/TargetAll.html')
+        attention_visualization.createHTML(fileVizMap['target_softmax']['text'], fileVizMap['target_softmax']['wts'], 'res/TargetSoftmaxAll.html')
+
+        import csv
+
+        with open('./visualization/res/targetAll.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in fileVizMap['target']['wts']:
+                writer.writerow(row)
+
+        with open('./visualization/res/' + config.testing + '_All.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in fileVizMap['scores']['wts']:
+                writer.writerow(row)
+
+        with open('./visualization/res/targetSoftAll.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in fileVizMap['target_softmax']['wts']:
+                writer.writerow(row)
+
+        with open('./visualization/res/words.csv', mode='w') as f:
+            writer = csv.writer(f, delimiter=' ')
+            for row in fileVizMap['target']['text']:
+                writer.writerow(row.split(' '))
+
+    embed()
