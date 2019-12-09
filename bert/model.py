@@ -47,13 +47,11 @@ class VanillaBertLayer(nn.Module):
     def __init__(self, num_labels):
         super(VanillaBertLayer, self).__init__()
         self.bert = BertModel.from_pretrained(config.bert_directory, output_hidden_states=True, output_attentions=True, num_labels=num_labels)
-        self.tokenizer = BertTokenizer.from_pretrained(config.bert_directory)
-
 
     def forward(self, tokens, attn_mask, seg_ids):
         # Encode tokens using BertTokenizer
         hidden_reps, cls_head, hidden_layers, attn_layers = self.bert(tokens, attention_mask = attn_mask, token_type_ids = seg_ids)
-        features = np.sum(hidden_layers[-4:-1])
+        features = hidden_layers[-1]
 
         if torch.cuda.is_available():
             features = features.cuda()
