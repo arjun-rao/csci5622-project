@@ -399,11 +399,9 @@ if __name__ == '__main__':
 
         predictions_max = predictions_max.view(batch_size, seq_len)
         numpy_predictions_max = predictions_max.cpu().detach().numpy()
-
+        sfe = scores_flat_exp[:, 1].view(batch_size, seq_len)
         # Visualization:
         if args.do_viz:
-            sfe = scores_flat_exp[:, 1].view(batch_size, seq_len)
-
             visualize_attention(sfe, b_words, filename='res/' + config.testing + '_scores'+str(batch_i)+'.html', maps=b_id_maps, viz_type='scores')
             visualize_attention(b_labels[:,:,1], b_words, filename='res/target' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target')
             visualize_attention(F.softmax(b_labels, 1)[:,:,1], b_words, filename='res/target_softmaxed' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target_softmax')
@@ -436,6 +434,10 @@ if __name__ == '__main__':
     test_f1_total_binary = metrics.flat_f1_score(test_total_y_true, test_total_y_pred, average="binary")
 
     roc_score= roc_auc_score(list(itertools.chain(*test_total_y_true)) , list(itertools.chain(*test_total_y_scores)))
+    pickle.dump(list(itertools.chain(*test_total_y_true)),
+                open(os.path.join(config.dump_address, "y_true.pkl"), "wb"))
+    pickle.dump(list(itertools.chain(*test_total_y_scores)),
+                open(os.path.join(config.dump_address, "y_pred.pkl"), "wb"))
     test_loss = total_test_loss / len(corpus.test.labels)
 
     print(
