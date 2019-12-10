@@ -5,7 +5,7 @@ gpu_number = 0
 ##########################################################
 model_mode = "prob"
 ############################################################
-testing = "Test1"
+testing = "Baseline"
 corpus_dir = '../Data/formatted/'
 output_dir_path = "../models_checkpoints/"+ testing+"/"
 dump_address = "../evals/"+testing+"/"
@@ -13,11 +13,11 @@ dump_address = "../evals/"+testing+"/"
 
 training = True
 
-if_Elmo = False
+if_Elmo = True
 
-if_Bert = True
+if_Bert = False
 
-if_att = False
+if_att = True
 
 if_ROC = True
 
@@ -39,7 +39,7 @@ elif if_Bert:
 else:
     hidden_dim = 512
 
-epochs = 5
+epochs = 2
 batch_size = 32
 
 ######################################Elmo files##################################################

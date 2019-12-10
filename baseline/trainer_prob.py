@@ -367,6 +367,10 @@ class Trainer(object):
 
             roc_score= roc_auc_score(list(itertools.chain(*test_total_y_true)) , list(itertools.chain(*test_total_y_scores)))
             test_loss = total_test_loss / len(self.corpus.test.labels)
+            pickle.dump(list(itertools.chain(*test_total_y_true)),
+                open(os.path.join(config.dump_address, "y_true.pkl"), "wb"))
+            pickle.dump(list(itertools.chain(*test_total_y_scores)),
+                        open(os.path.join(config.dump_address, "y_pred.pkl"), "wb"))
 
             print(
                 "->>>>>>>>>>>>>TOTAL>>>>>>>>>>>>>>>>>>>>>>> test_loss: {}, test_accuracy: {}, test_f1_score_micro: {} ROC:{}".format(
