@@ -134,7 +134,7 @@ def Jensen_Shannon(scores_probs, label_probs):
 
 
 if __name__ == '__main__':
-    file = "../Evals/test1/"
+    file = "../Evals/Baseline/"
 
     scores_numpy = pickle.load(open(file + "score_pobs.pkl", "rb"))
     label_probs = pickle.load(open(file + "label_pobs.pkl", "rb"))
