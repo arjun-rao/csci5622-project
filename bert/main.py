@@ -29,13 +29,13 @@ from transformers import AdamW, WarmupLinearSchedule
 
 from seqeval.metrics import f1_score
 
-from logger import Logger
-from helper import Helper
-from config import *
-import config
-from dataset import *
-from model import BertAttnModel
-import attention_visualization
+from bert.logger import Logger
+from bert.helper import Helper
+from bert.config import *
+import bert.config as config
+from bert.dataset import *
+from bert.model import BertAttnModel
+import bert.attention_visualization
 
 helper = Helper()
 logger = Logger(config.output_dir_path + 'logs')

@@ -35,7 +35,7 @@ def createHTML(texts, weights, fileName):
     <script>
     """
     part2 = """
-     var color = "255, 70, 50";
+    var color = "255, 70, 50";
 
     for (var k=0; k < any_text.length; k++) {
         var tokens = any_text[k].split(" ");

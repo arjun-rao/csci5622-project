@@ -6,7 +6,7 @@ from transformers import BertModel
 from transformers import BertTokenizer
 
 import numpy as np
-import config
+import bert.config as config
 
 class BertAttnModel(nn.Module):
     def __init__(self, num_labels, extractor_type,  hidden_dim):

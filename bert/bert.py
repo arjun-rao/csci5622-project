@@ -1,11 +1,11 @@
-import config
-from model import BertAttnModel
+import bert.config
+from bert.model import BertAttnModel
 from transformers import BertTokenizer
 from keras.preprocessing.sequence import pad_sequences
-import helper
+import bert.helper as helper
 import torch
 import torch.nn.functional as F
-from main import *
+from bert.main import *
 import numpy as np
 
 MAX_LEN = 75
@@ -22,11 +22,14 @@ class BertPredictor:
 
     def load_model(self, model_path):
         """Loads the trained BERT model from model_path"""
+        self.model_path = model_path
         try:
             helper.load_saved_model(self.model, model_path)
             self.model.eval()
             self._model_loaded = True
-        except:
+
+        except Exception as e:
+            print(e)
             self._model_loaded = False
             return False
 
@@ -82,16 +85,18 @@ class BertPredictor:
 
     def predict(self, text):
         """Returns emphasis probablility for each word in text using loaded BERT model"""
-        sentence = text.split(' ')
-        b_inputs, b_topic_ids, b_masks, id_maps = self._bert_tokenize(sentence)
-        scores = self.model(b_inputs, b_masks, b_topic_ids)[0]
-        scores_flat = F.log_softmax(scores.view(1 * MAX_LEN, -1), dim=1)
-        scores_flat_exp = torch.exp(scores_flat)
-        wts = scores_flat_exp[:, 1].view(1, MAX_LEN)
-        wts_add = wts.cpu()
-        wts_add_np = wts_add.data.numpy()
-        wts_add_list = wts_add_np.tolist()
-        new_wts = np.array([wts_add_list[0][i] for i in id_maps[0]])
-        new_wts = normalize(new_wts)
-        return new_wts
+        if self._model_loaded:
+            sentence = text.split(' ')
+            b_inputs, b_topic_ids, b_masks, id_maps = self._bert_tokenize(sentence)
+            scores = self.model(b_inputs, b_masks, b_topic_ids)[0]
+            scores_flat = F.log_softmax(scores.view(1 * MAX_LEN, -1), dim=1)
+            scores_flat_exp = torch.exp(scores_flat)
+            wts = scores_flat_exp[:, 1].view(1, MAX_LEN)
+            wts_add = wts.cpu()
+            wts_add_np = wts_add.data.numpy()
+            wts_add_list = wts_add_np.tolist()
+            new_wts = np.array([wts_add_list[0][i] for i in id_maps[0]])
+            # new_wts = normalize(new_wts)
+            return list(new_wts)
+        return []
 

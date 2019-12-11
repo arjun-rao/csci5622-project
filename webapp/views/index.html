@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Emphasis Selection
+{% endblock %}
+
+{% block main %}
+    <form action="">
+        <fieldset>
+            <div class="form-group">
+                <input autocomplete="off" id="text" autofocus class="form-control" name="text" placeholder="Sentence..." type="text" value="Once you choose hope, anything's possible"/>
+            </div>
+            <div class="form-group">
+                <div class="checkbox">
+                    <label><input type="checkbox" id="use_color" value="">Use Color</label>
+                </div>
+                <div class="checkbox">
+                    <label><input type="checkbox" id="use_lines" value="">Split Lines</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <button id="predict" class="btn btn-default" type="submit">Emphasize</button>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="jumbotron hidden" id="predictDiv">
+
+    </div>
+{% endblock %}
