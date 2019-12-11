@@ -80,6 +80,8 @@ def svm_lin(corpus, do_train=False):
         y_pred.append([item[1] for item in labels])
         y_test_prob.append(y_test[i])
         y_pred_roc.extend(labels)
+    pickle.dump(list(itertools.chain(*y_pred)), open("../../evals/Others/svm_pred.pkl", "wb"))
+    flat_pred = list(itertools.chain(*y_pred))
     print("Finished3")
     y_pred_roc = torch.tensor(y_pred_roc)
     _, pred = torch.max(y_pred_roc, 1)
@@ -92,7 +94,7 @@ def svm_lin(corpus, do_train=False):
     attention_visualization.createHTML(text_flat, y_pred, "svm.html")
     y_test_roc = np.array([1 if i >= 0.5 else 0 for i in y_test_roc])
     pred = pred.numpy()
-    print('ROC: ',roc_auc_score(y_test_roc, pred))
+    print('ROC: ',roc_auc_score(y_test_roc, flat_pred))
     print("Finished5")
     match_score,k_score = features_obj.predict_score(y_pred,y_test_prob)
 
