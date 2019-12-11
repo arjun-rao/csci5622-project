@@ -19,9 +19,12 @@ from keras import optimizers
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import matplotlib.pylab as plt
 
-from visualization import attention_visualization
+# from visualization import attention_visualization
 
-
+def normalize(v):
+    den = np.max(v)-np.min(v)
+    return(v-np.min(v))/den
+    
 def main():
     mlp_obj = Logistic()
     corpus = Corpus.get_corpus("../../Data/formatted/", "./corpus.io.pkl")
@@ -87,19 +90,19 @@ def main():
         y_pred.append(l_new)
         y_pred_roc.extend(labels)
         y_test_prob.append(y_test[i])
-    embed()
-    text_flat = []
-    for test in corpus.test.words:
-        text_flat.append(" ".join(test))
+    # embed()
+    # text_flat = []
+    # for test in corpus.test.words:
+    #     text_flat.append(" ".join(test))
 
-    attention_visualization.createHTML(text_flat, y_pred, "res/mlp.html")
-    y_pred_roc = torch.tensor(y_pred_roc)
-    _, pred = torch.max(y_pred_roc, 1)
+    # attention_visualization.createHTML(text_flat, y_pred, "res/mlp.html")
+    # y_pred_roc = torch.tensor(y_pred_roc)
+    # _, pred = torch.max(y_pred_roc, 1)
     y_test_roc = []
     for i in y_test_prob:
         y_test_roc.extend(i)
     y_test_roc = np.array([1 if i >= 0.5 else 0 for i in y_test_roc])
-    pred = pred.numpy()
+    # pred = pred.numpy()
     sum_all = 0
     for k,v in len_map.items():
         sum_all += len(v)
@@ -125,7 +128,7 @@ def main():
     # plt.show()
 
 
-    print('ROC: ',roc_auc_score(y_test_roc, pred))
+    print('ROC: ',roc_auc_score(y_test_roc, y_pred_roc))
     match_score,k_score = mlp_obj.predict_score(y_pred,y_test_prob)
     
 if __name__ == "__main__":
