@@ -5,6 +5,7 @@ import json
 import re
 import torch
 import torch.nn as nn
+import pickle
 import numpy as np
 from torch.optim import SGD
 from utils.data  import Corpus, Encoder
@@ -36,11 +37,22 @@ if __name__ == '__main__':
 
 
     corpus = Corpus.get_corpus(corpus_dir, corpus_pkl)
-    encoder = Encoder.get_encoder(corpus, emb_path, encoder_pkl)
 
-    if not (config.if_Elmo or config.if_Bert):
-        encoder.encode_words(corpus)
+    if config.if_flair:
+        # encoder = Encoder(corpus, emb_path, flair=True)
+        # with open(corpus_pkl_flair, 'wb') as fp:
+        #     pickle.dump(corpus, fp, -1)
 
+        with open(corpus_pkl_flair, 'rb') as fp:
+            corpus = pickle.load(fp)
+        encoder = None
+    else:
+        encoder = Encoder.get_encoder(corpus, emb_path, encoder_pkl)
+
+        if not (config.if_Elmo or config.if_Bert):
+            encoder.encode_words(corpus, flair=True)
+
+        embed()
 
     if model_mode=="prob":
         from trainer_prob import Trainer
@@ -52,7 +64,9 @@ if __name__ == '__main__':
             print("[LOG] Using Bert ...")
             model = SeqModel_Bert(len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
         else:
-            model = SeqModel(encoder.word_emb, len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
+            if config.if_flair:
+                print("[LOG] Using Flair ...")
+            model = SeqModel(len(corpus.get_label_vocab()), extractor_type,  hidden_dim)
         optimizer = optim.Adam(lr=lr, params=model.parameters())
         print("==========================================================")
         print("[LOG] Model:")

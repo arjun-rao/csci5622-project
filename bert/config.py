@@ -2,13 +2,14 @@
 bert_directory = '../../embedding/bert_cased/'
 corpus_dir = '../Data/formatted/'
 corpus_pkl = corpus_dir + "bert_corpus.io.pkl"
-testing = "BertBest"
+testing = "BertSolo"
 output_dir_path = "../models_checkpoints/"+ testing+"/"
 dump_address = "../evals/"+testing+"/"
 
-FULL_FINETUNING = False
+FULL_FINETUNING = True
 
-if_att = True
+if_att = False
+if_bilstm = False
 
 extractor_type = 'lstm'
 feat_extractor = 'lstm'
