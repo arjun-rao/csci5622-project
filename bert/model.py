@@ -14,7 +14,8 @@ class BertAttnModel(nn.Module):
 
         self.bertLayer = VanillaBertLayer(num_labels)
         # Bert embedding dimension is 768
-        self.featureEncoder = FeatureEncoder(input_dim=768, extractor_type= extractor_type, hidden_dim = hidden_dim)
+        if config.if_bilstm:
+            self.featureEncoder = FeatureEncoder(input_dim=768, extractor_type= extractor_type, hidden_dim = hidden_dim)
         if config.if_att:
             self.attention = Attention(hidden_dim)
         self.score_layer = nn.Sequential(
@@ -32,7 +33,10 @@ class BertAttnModel(nn.Module):
 
     def forward(self, tokens, attn_mask, seg_ids):
         emb_sequence, mask = self.bertLayer(tokens, attn_mask, seg_ids)
-        features = self.featureEncoder(emb_sequence, mask)  # emb_sequence shape: [batch_size, max_seq_len, emb_dim] => [128, 50, 100]
+        if config.if_bilstm:
+            features = self.featureEncoder(emb_sequence, mask)  # emb_sequence shape: [batch_size, max_seq_len, emb_dim] => [128, 50, 100]
+        else:
+            features = emb_sequence
         if config.if_att:
             features, att_weights = self.attention(features, mask.float())
         else:

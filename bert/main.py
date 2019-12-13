@@ -178,6 +178,7 @@ def train(model, tr_dataloader, dev_dataloader,corpus, epochs=1, learning_rate=0
     # else:
     #     param_optimizer = list(model.classifier.named_parameters())
     #     optimizer_grouped_parameters = [{"params": [p for n, p in param_optimizer]}]
+    print(model.parameters)
     optimizer = Adam(model.parameters(), lr=learning_rate)
     loss_func = nn.KLDivLoss(reduction='batchmean')
 
@@ -340,9 +341,14 @@ if __name__ == '__main__':
     dev_sampler = RandomSampler(dev_data)
     dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=bs)
 
-    test_data = TensorDataset(test_inputs, test_topic_ids, test_masks, test_labels)
-    # test_sampler = RandomSampler(test_data)
-    test_dataloader = DataLoader(test_data, batch_size=bs)
+    # test_data = TensorDataset(test_inputs, test_topic_ids, test_masks, test_labels)
+    # # test_sampler = RandomSampler(test_data)
+    # test_dataloader = DataLoader(test_data, batch_size=bs)
+
+    # Error analysis
+    test_data = TensorDataset(dev_inputs, dev_topic_ids, dev_masks, dev_labels)
+    # test_sampler = RandomSampler(dev_data)
+    test_dataloader = DataLoader(dev_data, batch_size=bs)
 
     # model = BertForTokenClassification.from_pretrained(bert_directory, num_labels=NUM_LABELS)
 
@@ -357,6 +363,8 @@ if __name__ == '__main__':
         import sys
         sys.exit(0)
     print('Evaluating test data....')
+    if not os.path.exists(config.dump_address):
+        os.makedirs(config.dump_address)
     loss_func = nn.KLDivLoss(reduction='batchmean')
     helper.load_saved_model(model, config.output_dir_path + 'best.pth')
     model.eval()
@@ -402,9 +410,9 @@ if __name__ == '__main__':
         sfe = scores_flat_exp[:, 1].view(batch_size, seq_len)
         # Visualization:
         if args.do_viz:
-            visualize_attention(sfe, b_words, filename='res/' + config.testing + '_scores'+str(batch_i)+'.html', maps=b_id_maps, viz_type='scores')
-            visualize_attention(b_labels[:,:,1], b_words, filename='res/target' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target')
-            visualize_attention(F.softmax(b_labels, 1)[:,:,1], b_words, filename='res/target_softmaxed' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target_softmax')
+            visualize_attention(sfe, b_words, filename='res/' + config.testing + '_dev_scores'+str(batch_i)+'.html', maps=b_id_maps, viz_type='scores')
+            visualize_attention(b_labels[:,:,1], b_words, filename='res/dev' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target')
+            visualize_attention(F.softmax(b_labels, 1)[:,:,1], b_words, filename='res/dev_softmaxed' + str(batch_i) + '.html', maps=b_id_maps, viz_type='target_softmax')
         # computing scores for ROC curve:
         scores_numpy = scores_flat_exp[:, 1].view(batch_size, seq_len)
         scores_numpy = scores_numpy.cpu().detach().numpy()
@@ -435,9 +443,9 @@ if __name__ == '__main__':
 
     roc_score= roc_auc_score(list(itertools.chain(*test_total_y_true)) , list(itertools.chain(*test_total_y_scores)))
     pickle.dump(list(itertools.chain(*test_total_y_true)),
-                open(os.path.join(config.dump_address, "y_true.pkl"), "wb"))
+                open(os.path.join(config.dump_address, "y_dev_true.pkl"), "wb"))
     pickle.dump(list(itertools.chain(*test_total_y_scores)),
-                open(os.path.join(config.dump_address, "y_pred.pkl"), "wb"))
+                open(os.path.join(config.dump_address, "y_dev_pred.pkl"), "wb"))
     test_loss = total_test_loss / len(corpus.test.labels)
 
     print(
@@ -450,39 +458,37 @@ if __name__ == '__main__':
     print("recall binary: ", metrics.flat_recall_score(test_total_y_true, test_total_y_pred, average="binary"))
 
 
-    if not os.path.exists(config.dump_address):
-        os.makedirs(config.dump_address)
     print("[LOG] dumping results in ", config.dump_address)
     pickle.dump(np.array(total_scores_numpy_probs),
-                open(os.path.join(config.dump_address, "score_pobs.pkl"), "wb"))
+                open(os.path.join(config.dump_address, "dev_score_pobs.pkl"), "wb"))
     pickle.dump(np.array(total_labels_numpy_probs),
-                open(os.path.join(config.dump_address, "label_pobs.pkl"), "wb"))
-    pickle.dump(np.array(total_mask_numpy), open(os.path.join(config.dump_address, "mask_pobs.pkl"), "wb"))
+                open(os.path.join(config.dump_address, "dev_label_pobs.pkl"), "wb"))
+    pickle.dump(np.array(total_mask_numpy), open(os.path.join(config.dump_address, "dev_mask_pobs.pkl"), "wb"))
 
     if args.do_viz and args.dump_viz:
-        pickle.dump(fileVizMap, open(os.path.join(config.dump_address, "vizmap.pkl"), "wb"))
-        attention_visualization.createHTML(fileVizMap['scores']['text'], fileVizMap['scores']['wts'], 'res/' + config.testing + '_scores_all.html')
-        attention_visualization.createHTML(fileVizMap['target']['text'], fileVizMap['target']['wts'], 'res/TargetAll.html')
-        attention_visualization.createHTML(fileVizMap['target_softmax']['text'], fileVizMap['target_softmax']['wts'], 'res/TargetSoftmaxAll.html')
+        pickle.dump(fileVizMap, open(os.path.join(config.dump_address, "dev_vizmap.pkl"), "wb"))
+        attention_visualization.createHTML(fileVizMap['scores']['text'], fileVizMap['scores']['wts'], 'res/' + config.testing + '_dev_scores_all.html')
+        attention_visualization.createHTML(fileVizMap['target']['text'], fileVizMap['target']['wts'], 'res/DevTargetAll.html')
+        attention_visualization.createHTML(fileVizMap['target_softmax']['text'], fileVizMap['target_softmax']['wts'], 'res/DevTargetSoftmaxAll.html')
 
         import csv
 
-        with open('./visualization/res/targetAll.csv', mode='w') as f:
+        with open('./visualization/res/devtargetAll.csv', mode='w') as f:
             writer = csv.writer(f, delimiter=',')
             for row in fileVizMap['target']['wts']:
                 writer.writerow(row)
 
-        with open('./visualization/res/' + config.testing + '_All.csv', mode='w') as f:
+        with open('./visualization/res/' + config.testing + '_dev_All.csv', mode='w') as f:
             writer = csv.writer(f, delimiter=',')
             for row in fileVizMap['scores']['wts']:
                 writer.writerow(row)
 
-        with open('./visualization/res/targetSoftAll.csv', mode='w') as f:
+        with open('./visualization/res/dev_targetSoftAll.csv', mode='w') as f:
             writer = csv.writer(f, delimiter=',')
             for row in fileVizMap['target_softmax']['wts']:
                 writer.writerow(row)
 
-        with open('./visualization/res/words.csv', mode='w') as f:
+        with open('./visualization/res/dev_words.csv', mode='w') as f:
             writer = csv.writer(f, delimiter=' ')
             for row in fileVizMap['target']['text']:
                 writer.writerow(row.split(' '))

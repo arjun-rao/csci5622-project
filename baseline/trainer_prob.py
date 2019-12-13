@@ -19,6 +19,7 @@ from sklearn_crfsuite import metrics
 import pickle
 import os
 from tqdm import tqdm
+from IPython import embed
 
 helper = Helper()
 logger = Logger(config.output_dir_path + 'logs')
@@ -110,6 +111,20 @@ def to_tensor(encodings, pad_value=0, return_mask=False):
         mask = mask.cuda()
     return (tensor, mask) if return_mask else tensor
 
+def to_tensor_flair(encodings, pad_value=0, return_mask=False):
+    maxlen = 50 if config.if_Bert else max(map(len, encodings))
+    tensor = torch.zeros(len(encodings), maxlen, encodings[0][0].shape[0]).float() + pad_value
+    mask = torch.zeros(len(encodings), maxlen).long()
+    for i, sample in enumerate(encodings):
+        for j, v in enumerate(sample):
+            tensor[i,j].add_(sample[j])
+        mask[i, :len(sample)] = 1
+    if torch.cuda.is_available():
+        tensor = tensor.cuda()
+        mask = mask.cuda()
+    # embed()
+    return (tensor, mask) if return_mask else tensor
+
 
 
 class Trainer(object):
@@ -133,15 +148,24 @@ class Trainer(object):
         batch_start = batch_i * self.batch_size_org
         batch_end = batch_start + self.batch_size
         l_tensor = to_tensor_labels(dataset.labels[batch_start: batch_end])
-        words = dataset.words[batch_start: batch_end]
+        if config.if_flair:
+            words = dataset.embeddings[batch_start: batch_end]
+        else:
+            words = dataset.words[batch_start: batch_end]
 
         if config.if_Elmo or config.if_Bert:
             scores, mask, att_w = model.forward(words)
             actual_words_no_pad = words
+        elif config.if_flair:
+            w_tensor, mask = to_tensor_flair(words,  return_mask=True)
+            # embed()
+            scores, att_w = model.forward(w_tensor, mask)
+            actual_words_no_pad = dataset.words[batch_start: batch_end]
         else:
-            w_tensor, mask= to_tensor(words,  return_mask=True )
+            w_tensor, mask= to_tensor(words,  return_mask=True)
             scores, att_w = model.forward(w_tensor, mask) # scores before flatten shape:  [batch_size, seq_len, num_labels]
             w_no_pad = w_tensor.cpu().detach().numpy()
+
             actual_words_no_pad = [[self.encoder.index2word[elem] for elem in elems] for elems in w_no_pad]
 
         batch_size, seq_len = l_tensor.size(0), l_tensor.size(1) # target_shape: [batch_size, seq_len]
