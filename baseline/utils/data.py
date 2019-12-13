@@ -10,6 +10,13 @@ import torch.optim as optim
 from torch.autograd import Variable
 import torch.nn.functional as F
 import config
+from IPython import embed
+
+from flair.data import Sentence
+from flair.embeddings import WordEmbeddings, FlairEmbeddings, StackedEmbeddings
+from flair.embeddings import ELMoEmbeddings, BertEmbeddings
+
+from tqdm import tqdm
 
 def read_text_embeddings(filename):
     embeddings = []
@@ -26,15 +33,40 @@ def flatten(elems):
     return [e for elem in elems for e in elem]
 
 class Encoder(object):
-    def __init__(self, corpus, emb_path):
+    def __init__(self, corpus, emb_path, flair=False):
 
         self.word2index, self.word_emb = self.get_pretrain_embeddings(emb_path, corpus.get_word_vocab())
         self.index2word = {i: w for w, i in self.word2index.items()}
+        self.flair_words = None
 
-    def encode_words(self, corpus):
-        corpus.train.words = [self.encode(self.word2index, sample) for sample in corpus.train.words]
-        corpus.dev.words = [self.encode(self.word2index, sample) for sample in corpus.dev.words]
-        corpus.test.words = [self.encode(self.word2index, sample) for sample in corpus.test.words]
+        if config.if_flair or flair:
+            # self.elmo = ELMoEmbeddings()
+            # self.bert_embedding = BertEmbeddings('bert-base-cased')
+            self.flair_forward_embedding = FlairEmbeddings('news-forward')
+            self.flair_backward_embedding = FlairEmbeddings('news-backward')
+            self.stacked_embeddings = StackedEmbeddings(
+                embeddings=[self.flair_forward_embedding, self.flair_backward_embedding])
+
+    def flair_encode(self, data):
+        """Generate list of flair embeddings for each sentence in data"""
+        sentences = [Sentence(' '.join(words)) for words in data]
+        _ = [self.stacked_embeddings.embed(sentence) for sentence in tqdm(sentences)]
+        corpus_embeddings = []
+        for item in sentences:
+            emb_seq = [token.embedding for token in item]
+            corpus_embeddings.append(emb_seq)
+        return corpus_embeddings
+
+    def encode_words(self, corpus, flair=False):
+        if not flair:
+            corpus.train.words = [self.encode(self.word2index, sample) for sample in corpus.train.words]
+            corpus.dev.words = [self.encode(self.word2index, sample) for sample in corpus.dev.words]
+            corpus.test.words = [self.encode(self.word2index, sample) for sample in corpus.test.words]
+        else:
+            corpus.dev.embeddings = self.flair_encode(corpus.dev.words)
+            corpus.train.embeddings = self.flair_encode(corpus.train.words)
+            corpus.test.embeddings = self.flair_encode(corpus.test.words)
+            return corpus
 
     def decode_words(self, corpus):
         corpus.train.words = [self.encode(self.index2word, sample) for sample in corpus.train.words]
@@ -149,6 +181,7 @@ class Dataset(object):
     def __init__(self, path):
         self.words  = self.read_conll_format(os.path.join(path, 'bio_probs.txt'))
         self.labels = self.read_conll_format_labels(os.path.join(path, 'bio_probs.txt'))
+        self.embeddings = None
 
         assert len(self.words) == len(self.labels)
 

@@ -4,13 +4,14 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
 import config
+from IPython import embed
 
 class SeqModel(nn.Module):
-    def __init__(self, embeddings, num_labels, extractor_type,  hidden_dim):
+    def __init__(self, num_labels, extractor_type,  hidden_dim):
         super(SeqModel, self).__init__()
         print("hidden dim: ", hidden_dim)
-        self.wordEmbedding = EmbeddingLayer(embeddings)
-        self.featureEncoder = FeatureEncoder(input_dim=embeddings.shape[1], extractor_type= extractor_type, hidden_dim =hidden_dim)
+        # self.wordEmbedding = EmbeddingLayer(embeddings)
+        self.featureEncoder = FeatureEncoder(input_dim=4096, extractor_type= extractor_type, hidden_dim =hidden_dim)
         if config.if_att:
             self.attention = Attention(hidden_dim)
 
@@ -32,16 +33,16 @@ class SeqModel(nn.Module):
 
 
     def forward(self, w_tensor, mask):
-        emb_sequence = self.wordEmbedding(w_tensor)  # w_tensor shape: [batch_size, max_seq_len] 
-        features = self.featureEncoder(emb_sequence, mask)  # emb_sequence shape: [batch_size, max_seq_len, emb_dim] 
+        # emb_sequence = self.wordEmbedding(w_tensor)  # w_tensor shape: [batch_size, max_seq_len]
+        features = self.featureEncoder(w_tensor, mask)  # emb_sequence shape: [batch_size, max_seq_len, emb_dim]
 
         if config.if_att:
             att_output, att_weights = self.attention(features, mask.float())
-            scores = self.score_layer(att_output) # features shape: [batch_size, max_seq_len, hidden_dim] 
+            scores = self.score_layer(att_output) # features shape: [batch_size, max_seq_len, hidden_dim]
         else:
-            scores = self.score_layer(features)  # features shape: [batch_size, max_seq_len, hidden_dim] 
+            scores = self.score_layer(features)  # features shape: [batch_size, max_seq_len, hidden_dim]
             att_weights = None
-        return scores, att_weights # score shape: [batch_size, max_seq_len, num_labels] 
+        return scores, att_weights # score shape: [batch_size, max_seq_len, num_labels]
 
 
 
@@ -73,7 +74,7 @@ class FeatureEncoder(nn.Module):
         if self.extractor_type == 'lstm':
             self.lstm = nn.LSTM(input_dim, self.hidden_dim//2, num_layers=2, batch_first=True, bidirectional=True)
             self.dropout = nn.Dropout(0.4)
-           
+
 
             if torch.cuda.is_available():
                 self.lstm = self.lstm.cuda()
@@ -86,18 +87,19 @@ class FeatureEncoder(nn.Module):
                :param mask:
                :return:
         """
+        # embed()
         if self.extractor_type == 'lstm':
-            lengths = torch.sum(mask, 1) # sum up all 1 values which is equal to the lenghts of sequences
-            lengths, order = lengths.sort(0, descending=True)
-            recover = order.sort(0, descending=False)[1]
+            # lengths = torch.sum(mask, 1) # sum up all 1 values which is equal to the lenghts of sequences
+            # lengths, order = lengths.sort(0, descending=True)
+            # recover = order.sort(0, descending=False)[1]
 
-            sequences = sequences[order]
-            packed_words = pack_padded_sequence(sequences, lengths.cpu().numpy(), batch_first=True)
-            lstm_out, hidden = self.lstm(packed_words, None)
-
-            feats, _ = pad_packed_sequence(lstm_out)
-            feats = feats.permute(1, 0, 2)
-            feats = feats[recover] # feat shape: [batch_size, seq_len, hidden_dim] 
+            # sequences = sequences[order]
+            # packed_words = pack_padded_sequence(sequences, lengths.cpu().numpy(), batch_first=True)
+            lstm_out, hidden = self.lstm(sequences, None)
+            feats = lstm_out
+            # feats, _ = pad_packed_sequence(lstm_out)
+            # feats = feats.permute(1, 0, 2)
+            # feats = feats[recover] # feat shape: [batch_size, seq_len, hidden_dim]
         return feats
 
 
