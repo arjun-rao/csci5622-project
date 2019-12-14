@@ -40,9 +40,9 @@ if __name__ == '__main__':
 
     if config.if_flair:
         # encoder = Encoder(corpus, emb_path, flair=True)
+        # encoder.encode_words(corpus, flair=True)
         # with open(corpus_pkl_flair, 'wb') as fp:
         #     pickle.dump(corpus, fp, -1)
-
         with open(corpus_pkl_flair, 'rb') as fp:
             corpus = pickle.load(fp)
         encoder = None
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         if not (config.if_Elmo or config.if_Bert):
             encoder.encode_words(corpus, flair=True)
 
-        embed()
+    embed()
 
     if model_mode=="prob":
         from trainer_prob import Trainer

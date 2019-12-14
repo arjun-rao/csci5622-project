@@ -11,7 +11,7 @@ class SeqModel(nn.Module):
         super(SeqModel, self).__init__()
         print("hidden dim: ", hidden_dim)
         # self.wordEmbedding = EmbeddingLayer(embeddings)
-        self.featureEncoder = FeatureEncoder(input_dim=4096, extractor_type= extractor_type, hidden_dim =hidden_dim)
+        self.featureEncoder = FeatureEncoder(input_dim=hidden_dim, extractor_type= extractor_type, hidden_dim =hidden_dim)
         if config.if_att:
             self.attention = Attention(hidden_dim)
 

@@ -28,7 +28,7 @@ if_visualize = True
 ##############################################################
 if model_mode== "prob":
     corpus_pkl = corpus_dir + "corpus.io.pkl"
-    corpus_pkl_flair = corpus_dir + "corpus.flair.pkl"
+    corpus_pkl_flair = corpus_dir + "corpus.flair_bert.pkl"
     encoder_pkl = corpus_dir + "encoder.io.pkl"
 ##############################################################
 lr = 0.0001
@@ -40,7 +40,7 @@ if if_Elmo:
 elif if_Bert:
     hidden_dim = 768
 elif if_flair:
-    hidden_dim = 4096
+    hidden_dim = 7168 #4096
 else:
     hidden_dim = 512
 

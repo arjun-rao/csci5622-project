@@ -41,11 +41,11 @@ class Encoder(object):
 
         if config.if_flair or flair:
             # self.elmo = ELMoEmbeddings()
-            # self.bert_embedding = BertEmbeddings('bert-base-cased')
+            self.bert_embedding = BertEmbeddings('bert-base-cased')
             self.flair_forward_embedding = FlairEmbeddings('news-forward')
             self.flair_backward_embedding = FlairEmbeddings('news-backward')
             self.stacked_embeddings = StackedEmbeddings(
-                embeddings=[self.flair_forward_embedding, self.flair_backward_embedding])
+                embeddings=[self.flair_forward_embedding, self.flair_backward_embedding, self.bert_embedding])
 
     def flair_encode(self, data):
         """Generate list of flair embeddings for each sentence in data"""
